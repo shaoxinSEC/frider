@@ -1,0 +1,58 @@
+.split-pane:vertical > .split-pane-divider {
+    -fx-pref-height: 6;
+    -fx-min-height: 6;
+    -fx-max-height: 6;
+    -fx-background-color: #d0d0d0;
+    -fx-cursor: v-resize;
+}
+
+.split-pane:vertical > .split-pane-divider:hover {
+    -fx-background-color: #4a90e2;
+}
+
+.split-pane:horizontal > .split-pane-divider {
+    -fx-pref-width: 6;
+    -fx-min-width: 6;
+    -fx-max-width: 6;
+    -fx-background-color: #d0d0d0;
+    -fx-cursor: h-resize;
+}
+
+.split-pane:horizontal > .split-pane-divider:hover {
+    -fx-background-color: #4a90e2;
+}
+
+.content-panel {
+    -fx-background-color: transparent;
+}
+
+.content-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.form-grid {
+    -fx-padding: 0 0 4 0;
+}
+
+.form-label {
+    -fx-text-fill: #555;
+}
+
+.section-header {
+    -fx-font-weight: bold;
+    -fx-text-fill: #333;
+    -fx-padding: 6 0 2 0;
+}
+
+.tool-bar {
+    -fx-padding: 2 0;
+}
+
+.tab-pane {
+    -fx-tab-min-width: 88;
+}
+
+.titled-pane > .title {
+    -fx-font-weight: normal;
+}

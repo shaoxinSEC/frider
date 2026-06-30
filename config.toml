@@ -1,0 +1,32 @@
+# 修改后保存即可热更新，无需重启程序
+
+root_command = "fk"
+frida_server_path = "/data/local/tmp/flo-16.7.19"
+frida_server_start_command = "/data/local/tmp/flo-16.7.19 &"
+frida_client_path = "tools/frida/frida-16.7.19/frida-16.7.19-c.exe"
+frida_ps_args = ["-U", "-a", "-i"]   # 用来获取应用名称，即当前frida client同级目录中名称包含frida-ps的文件
+adb_path = "tools/adb/adb.exe"
+scripts_dir = "scripts"
+default_proxy = "http://192.168.137.1:8083"
+
+
+
+# 转发规则（转发所有流量时生效，转发特定应用的流量不生效）
+# {proxy} = IP:端口
+# {proxy_host} = IP
+# {proxy_port} = 端口
+
+[[iptables_redirect_rules]]
+name = "SkipLocalhost"
+template = "iptables -t nat -A OUTPUT -p tcp -d 127.0.0.0/8 -j RETURN"
+
+
+[[iptables_redirect_rules]]
+name = "SkipProxy"
+template = "iptables -t nat -A OUTPUT -p tcp -d {proxy_host} -j RETURN"
+
+
+[[iptables_redirect_rules]]
+name = "AllTCP"
+template = "iptables -t nat -A OUTPUT -p tcp -j DNAT --to-destination {proxy}"
+
