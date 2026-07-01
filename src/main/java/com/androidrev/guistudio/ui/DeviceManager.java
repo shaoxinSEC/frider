@@ -114,7 +114,7 @@ public final class DeviceManager {
                 if (deviceConnected) {
                     deviceConnected = false;
                     Platform.runLater(() ->
-                            app.getLogger().log(AppContext.SOURCE_SYSTEM, "设备 %s 连接异常 (%s)",
+                            app.getLogger().log(AppContext.SOURCE_SYSTEM, "设备 %s连接异常 (%s)",
                                     current.serial(), current.state()));
                 }
                 return;

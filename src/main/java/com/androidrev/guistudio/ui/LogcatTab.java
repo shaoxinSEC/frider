@@ -102,7 +102,7 @@ public final class LogcatTab {
                 try {
                     var check = app.getAdb().hasDevice();
                     if (!check.connected()) {
-                        Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_LOGCAT, "未检测到 ADB 设备"));
+                        Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_LOGCAT, "未检测到ADB设备"));
                         running.set(false);
                         return;
                     }
@@ -113,7 +113,7 @@ public final class LogcatTab {
                             uid = app.getAdb().fetchPackageUid(target.getPackageName());
                         } catch (Exception e) {
                             Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_LOGCAT,
-                                    "无法获取 UID，回退为 Tag 过滤: %s", e.getMessage()));
+                                    "无法获取UID，回退为Tag过滤: %s", e.getMessage()));
                         }
                     }
 
@@ -123,7 +123,7 @@ public final class LogcatTab {
                     stderrThread = startDrainThread(process.getErrorStream());
 
                     Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_LOGCAT,
-                            "Logcat 已开始: %s", formatLogcatCommand(logcatArgs)));
+                            "Logcat已开始: %s", formatLogcatCommand(logcatArgs)));
 
                     try (BufferedReader reader = new BufferedReader(
                             new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8), 256 * 1024)) {
@@ -137,7 +137,7 @@ public final class LogcatTab {
                         processRef.set(null);
                         running.set(false);
                         Platform.runLater(() -> {
-                            app.getLogger().log(AppContext.SOURCE_LOGCAT, "Logcat 已停止");
+                            app.getLogger().log(AppContext.SOURCE_LOGCAT, "Logcat已停止");
                             if (!logLines.isEmpty()) {
                                 logView.scrollTo(logLines.size() - 1);
                             }
@@ -292,7 +292,7 @@ public final class LogcatTab {
         }
 
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("导出 Logcat 日志");
+        chooser.setTitle("导出Logcat日志");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("文本文件", "*.txt", "*.log"));
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         chooser.setInitialFileName("logcat_" + timestamp + ".txt");
@@ -312,7 +312,7 @@ public final class LogcatTab {
             try {
                 Files.writeString(target.toPath(), content, StandardCharsets.UTF_8);
                 Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_LOGCAT,
-                        "已导出 %d 字符到 %s", content.length(), target.getAbsolutePath()));
+                        "已导出 %d字符到 %s", content.length(), target.getAbsolutePath()));
             } catch (Exception ex) {
                 Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_LOGCAT, ex));
             }

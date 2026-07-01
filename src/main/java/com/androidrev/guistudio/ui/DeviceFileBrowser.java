@@ -18,6 +18,8 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -131,12 +133,13 @@ public final class DeviceFileBrowser extends BorderPane {
         table.setPlaceholder(new Label("目录为空或尚未加载"));
 
         MenuItem openItem = new MenuItem("打开");
+        MenuItem copyPathItem = new MenuItem("复制路径");
         MenuItem uploadItem = new MenuItem("上传到此目录");
         MenuItem downloadItem = new MenuItem("下载");
         MenuItem mkdirItem = new MenuItem("新建文件夹");
         MenuItem deleteItem = new MenuItem("删除");
         MenuItem refreshItem = new MenuItem("刷新");
-        ContextMenu contextMenu = new ContextMenu(openItem, uploadItem, downloadItem,
+        ContextMenu contextMenu = new ContextMenu(openItem, copyPathItem, uploadItem, downloadItem,
                 new SeparatorMenuItem(), mkdirItem, deleteItem, refreshItem);
 
         openItem.setOnAction(e -> {
@@ -145,6 +148,7 @@ public final class DeviceFileBrowser extends BorderPane {
                 navigateTo(selected.fullPath(getCurrentPath()), true);
             }
         });
+        copyPathItem.setOnAction(e -> copySelectedPath());
         uploadItem.setOnAction(e -> uploadFiles());
         downloadItem.setOnAction(e -> downloadSelected());
         mkdirItem.setOnAction(e -> createDirectory());
@@ -156,6 +160,7 @@ public final class DeviceFileBrowser extends BorderPane {
             RemoteEntry selected = getSelectedEntry();
             boolean hasSelection = selected != null;
             openItem.setDisable(!hasSelection || !selected.isDirectory());
+            copyPathItem.setDisable(!hasSelection);
             downloadItem.setDisable(!hasSelection || selected.isDirectory());
             deleteItem.setDisable(!hasSelection);
         });
@@ -224,7 +229,7 @@ public final class DeviceFileBrowser extends BorderPane {
                 Platform.runLater(() -> {
                     pathField.setText(target);
                     entries.setAll(list);
-                    setStatus(String.format("%s — %d 项", target, list.size()));
+                    setStatus(String.format("%s — %d项", target, list.size()));
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
@@ -255,6 +260,18 @@ public final class DeviceFileBrowser extends BorderPane {
             return selected.fullPath(getCurrentPath());
         }
         return getCurrentPath();
+    }
+
+    private void copySelectedPath() {
+        RemoteEntry selected = getSelectedEntry();
+        if (selected == null) {
+            app.getLogger().log(AppContext.SOURCE_ADB, "请先选择文件或文件夹");
+            return;
+        }
+        String path = selected.fullPath(getCurrentPath());
+        ClipboardContent content = new ClipboardContent();
+        content.putString(path);
+        Clipboard.getSystemClipboard().setContent(content);
     }
 
     private void uploadFiles() {

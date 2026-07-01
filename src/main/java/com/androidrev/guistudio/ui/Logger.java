@@ -7,8 +7,11 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -37,6 +40,7 @@ public class Logger {
     public Logger() {
         listView.setFixedCellSize(18);
         listView.setStyle(LOG_STYLE);
+        listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         listView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -59,6 +63,13 @@ public class Logger {
 
         ContextMenu menu = new ContextMenu(selectAllItem, copyItem, clearItem);
         listView.setContextMenu(menu);
+
+        listView.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+            if (e.isControlDown() && e.getCode() == KeyCode.A) {
+                listView.getSelectionModel().selectAll();
+                e.consume();
+            }
+        });
     }
 
     private void copySelection() {

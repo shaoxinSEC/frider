@@ -6,10 +6,11 @@ import java.util.List;
 public class Config {
     private String rootCommand = "su";
     private String fridaServerPath = "/data/local/tmp/frida-server";
-    private String fridaServerStartCommand = "/data/local/tmp/frida-server &";
     private String fridaClientPath = "frida";
     private String fridaToolsDir = "tools/frida-tools";
-    private List<String> fridaPsArgs = List.of("-U", "-a", "-i");
+    private String fridaConnection = "usb";
+    private String fridaRemoteHost = "";
+    private String fridaRemotePort = "27042";
     private String adbPath = "adb";
     private String scrcpyPath = "scrcpy";
     private String scriptsDir = "scripts";
@@ -26,10 +27,11 @@ public class Config {
         Config cfg = new Config();
         cfg.rootCommand = rootCommand;
         cfg.fridaServerPath = fridaServerPath;
-        cfg.fridaServerStartCommand = fridaServerStartCommand;
         cfg.fridaClientPath = fridaClientPath;
         cfg.fridaToolsDir = fridaToolsDir;
-        cfg.fridaPsArgs = List.copyOf(fridaPsArgs);
+        cfg.fridaConnection = fridaConnection;
+        cfg.fridaRemoteHost = fridaRemoteHost;
+        cfg.fridaRemotePort = fridaRemotePort;
         cfg.adbPath = adbPath;
         cfg.scrcpyPath = scrcpyPath;
         cfg.scriptsDir = scriptsDir;
@@ -45,10 +47,10 @@ public class Config {
 
     public void validate() {
         if (adbPath == null || adbPath.isBlank()) {
-            throw new IllegalStateException("adb_path 未配置");
+            throw new IllegalStateException("adb_path未配置");
         }
         if (fridaClientPath == null || fridaClientPath.isBlank()) {
-            throw new IllegalStateException("frida_client_path 未配置");
+            throw new IllegalStateException("frida_client_path未配置");
         }
     }
 
@@ -68,14 +70,6 @@ public class Config {
         this.fridaServerPath = fridaServerPath;
     }
 
-    public String getFridaServerStartCommand() {
-        return fridaServerStartCommand;
-    }
-
-    public void setFridaServerStartCommand(String fridaServerStartCommand) {
-        this.fridaServerStartCommand = fridaServerStartCommand;
-    }
-
     public String getFridaClientPath() {
         return fridaClientPath;
     }
@@ -92,16 +86,29 @@ public class Config {
         this.fridaToolsDir = fridaToolsDir;
     }
 
-    public List<String> getFridaPsArgs() {
-        return fridaPsArgs;
+    /** usb或remote，对应Frida的 -U / -H。 */
+    public String getFridaConnection() {
+        return fridaConnection;
     }
 
-    public void setFridaPsArgs(List<String> fridaPsArgs) {
-        if (fridaPsArgs == null || fridaPsArgs.isEmpty()) {
-            this.fridaPsArgs = List.of("-U", "-a", "-i");
-        } else {
-            this.fridaPsArgs = List.copyOf(fridaPsArgs);
-        }
+    public void setFridaConnection(String fridaConnection) {
+        this.fridaConnection = fridaConnection;
+    }
+
+    public String getFridaRemoteHost() {
+        return fridaRemoteHost;
+    }
+
+    public void setFridaRemoteHost(String fridaRemoteHost) {
+        this.fridaRemoteHost = fridaRemoteHost;
+    }
+
+    public String getFridaRemotePort() {
+        return fridaRemotePort;
+    }
+
+    public void setFridaRemotePort(String fridaRemotePort) {
+        this.fridaRemotePort = fridaRemotePort;
     }
 
     public String getAdbPath() {

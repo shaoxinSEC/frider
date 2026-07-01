@@ -42,7 +42,7 @@ public record ProxyEndpoint(String protocol, String host, String port) {
     private static HostPort parseHostPort(String s) {
         int idx = s.lastIndexOf(':');
         if (idx <= 0 || idx >= s.length() - 1) {
-            throw new IllegalArgumentException("代理格式应为 [协议://]IP:端口，例如 http://192.168.1.100:8080");
+            throw new IllegalArgumentException("代理格式应为 [协议://]IP:端口，例如http://192.168.1.100:8080");
         }
         String host = s.substring(0, idx).trim();
         String port = s.substring(idx + 1).trim();

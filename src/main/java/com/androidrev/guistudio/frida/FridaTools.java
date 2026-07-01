@@ -13,21 +13,21 @@ import java.util.stream.Stream;
 public final class FridaTools {
     public enum Kind {
         CLIENT("Frida Client", "脚本注入与交互调试", false),
-        SERVER("Frida Server", "推送到 Android 设备的 frida-server", false),
+        SERVER("Frida Server", "推送到Android设备的frida-server", false),
         PS("frida-ps", "列出进程与应用", false),
         KILL("frida-kill", "终止目标进程", true),
-        TRACE("frida-trace", "函数/API 调用追踪", true),
-        DEXDUMP("frida-dexdump", "从内存导出 DEX", true),
-        DISCOVER("frida-discover", "发现可 hook 的 API", true),
-        LS_DEVICES("frida-ls-devices", "列出 Frida 可用设备", false),
+        TRACE("frida-trace", "函数/API调用追踪", true),
+        DEXDUMP("frida-dexdump", "从内存导出DEX", true),
+        DISCOVER("frida-discover", "发现可hook的API", true),
+        LS_DEVICES("frida-ls-devices", "列出Frida可用设备", false),
         LS("frida-ls", "列出设备端文件", false),
         PULL("frida-pull", "从设备拉取文件", false),
         PUSH("frida-push", "向设备推送文件", false),
         RM("frida-rm", "删除设备端文件", false),
-        APK("frida-apk", "向 APK 注入 Frida Gadget", false),
-        COMPILE("frida-compile", "编译 TypeScript/JavaScript 模块", false),
-        CREATE("frida-create", "创建 Frida 项目模板", false),
-        JOIN("frida-join", "连接 Frida Portal", true),
+        APK("frida-apk", "向APK注入Frida Gadget", false),
+        COMPILE("frida-compile", "编译TypeScript/JavaScript模块", false),
+        CREATE("frida-create", "创建Frida项目模板", false),
+        JOIN("frida-join", "连接Frida Portal", true),
         ITRACE("frida-itrace", "指令级追踪（交互式）", true);
 
         private final String label;
@@ -143,7 +143,7 @@ public final class FridaTools {
 
     public static String findToolInDir(Path toolsDir, String nameContains) throws IOException {
         if (toolsDir == null || !Files.isDirectory(toolsDir)) {
-            throw new IOException("frida-tools 目录不存在: " + toolsDir);
+            throw new IOException("frida-tools目录不存在: " + toolsDir);
         }
         String needle = nameContains.toLowerCase(Locale.ROOT);
         try (Stream<Path> stream = Files.walk(toolsDir)) {
@@ -161,7 +161,7 @@ public final class FridaTools {
     public static String resolveLocalServerBesideClient(String fridaClientPath, String deviceServerPath)
             throws IOException {
         if (fridaClientPath == null || fridaClientPath.isBlank()) {
-            throw new IOException("未配置本地 frida");
+            throw new IOException("未配置本地frida");
         }
         Path client = Path.of(fridaClientPath.trim());
         if (!client.isAbsolute()) {
@@ -170,7 +170,7 @@ public final class FridaTools {
         client = client.toAbsolutePath().normalize();
         Path parent = client.getParent();
         if (parent == null || !Files.isDirectory(parent)) {
-            throw new IOException("无法从本地 frida 所在目录查找 frida-server: " + client);
+            throw new IOException("无法从本地frida所在目录查找frida-server: " + client);
         }
         String preferredName = null;
         if (deviceServerPath != null && !deviceServerPath.isBlank()) {
@@ -178,7 +178,7 @@ public final class FridaTools {
         }
         List<String> candidates = listMatchingFiles(parent, FridaTools::isFridaServerFile);
         if (candidates.isEmpty()) {
-            throw new IOException("在 " + parent + " 中未找到 frida-server");
+            throw new IOException("在 " + parent + " 中未找到frida-server");
         }
         if (preferredName != null) {
             for (String candidate : candidates) {
@@ -192,7 +192,7 @@ public final class FridaTools {
 
     public static String findToolBesideClient(String fridaClientPath, String nameContains) throws IOException {
         if (fridaClientPath == null || fridaClientPath.isBlank()) {
-            throw new IOException("未配置 frida client，无法定位 " + nameContains);
+            throw new IOException("未配置frida client，无法定位 " + nameContains);
         }
         Path client = Path.of(fridaClientPath.trim());
         if (!client.isAbsolute()) {
@@ -201,7 +201,7 @@ public final class FridaTools {
         client = client.toAbsolutePath().normalize();
         Path parent = client.getParent();
         if (parent == null || !Files.isDirectory(parent)) {
-            throw new IOException("无法从 frida client 所在目录查找 " + nameContains + ": " + client);
+            throw new IOException("无法从frida client所在目录查找 " + nameContains + ": " + client);
         }
         String needle = nameContains.toLowerCase(Locale.ROOT);
         try (Stream<Path> stream = Files.list(parent)) {

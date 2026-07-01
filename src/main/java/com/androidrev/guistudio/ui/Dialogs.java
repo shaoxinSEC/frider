@@ -39,7 +39,7 @@ public final class Dialogs {
 
     public static TextFormResult showNewScriptDialog(Stage owner) {
         Dialog<TextFormResult> dialog = new Dialog<>();
-        dialog.setTitle("新建 Frida 脚本");
+        dialog.setTitle("新建Frida脚本");
         initOwnerIfReady(dialog, owner);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
@@ -70,7 +70,7 @@ public final class Dialogs {
 
     public static TextFormResult showEditScriptDialog(Stage owner, String name, String content) {
         Dialog<TextFormResult> dialog = new Dialog<>();
-        dialog.setTitle("编辑 Frida 脚本");
+        dialog.setTitle("编辑Frida脚本");
         initOwnerIfReady(dialog, owner);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 

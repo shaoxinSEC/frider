@@ -53,7 +53,7 @@ public final class AdbTab {
         connectField.setPromptText("192.168.1.100:5555");
 
         TextField tcpipField = new TextField("5555");
-        tcpipField.setPromptText("TCP 端口");
+        tcpipField.setPromptText("TCP端口");
         tcpipField.setPrefColumnCount(6);
         tcpipField.setMaxWidth(Region.USE_PREF_SIZE);
 
@@ -78,10 +78,10 @@ public final class AdbTab {
 
         // Shell / custom command
         TextField shellField = new TextField();
-        shellField.setPromptText("输入 shell 命令，如 pm list packages -3");
+        shellField.setPromptText("输入shell命令，如pm list packages -3");
 
         TextField customField = new TextField();
-        customField.setPromptText("自定义 adb 命令，如 devices / version（不含 adb 前缀）");
+        customField.setPromptText("自定义adb命令，如devices / version（不含adb前缀）");
 
         Consumer<String> append = text -> Platform.runLater(() -> {
             if (output.getText().isEmpty()) {
@@ -129,7 +129,7 @@ public final class AdbTab {
         connectBtn.setOnAction(e -> {
             String host = connectField.getText().trim();
             if (host.isEmpty()) {
-                app.getLogger().log(AppContext.SOURCE_ADB, "请输入 host:port");
+                app.getLogger().log(AppContext.SOURCE_ADB, "请输入host:port");
                 return;
             }
             runHost.accept(() -> {
@@ -176,8 +176,8 @@ public final class AdbTab {
                 int port = parsePort(tcpipField.getText(), 5555);
                 app.getAdb().enableTcpIp(port);
                 Platform.runLater(() -> {
-                    app.getLogger().log(AppContext.SOURCE_ADB, "已开启 TCP/IP 模式，端口 %d", port);
-                    append.accept("$ adb tcpip " + port + "\n设备已切换到 TCP/IP 模式，端口 " + port);
+                    app.getLogger().log(AppContext.SOURCE_ADB, "已开启TCP/IP模式，端口 %d", port);
+                    append.accept("$ adb tcpip " + port + "\n设备已切换到TCP/IP模式，端口 " + port);
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
@@ -199,16 +199,16 @@ public final class AdbTab {
         Button bootloaderBtn = actionButton("Bootloader", () -> runOnDevice.accept(() -> {
             app.getAdb().rebootBootloader();
             Platform.runLater(() -> {
-                app.getLogger().log(AppContext.SOURCE_ADB, "已重启到 Bootloader");
-                append.accept("$ adb reboot bootloader\n已重启到 Bootloader");
+                app.getLogger().log(AppContext.SOURCE_ADB, "已重启到Bootloader");
+                append.accept("$ adb reboot bootloader\n已重启到Bootloader");
             });
         }));
 
         Button recoveryBtn = actionButton("Recovery", () -> runOnDevice.accept(() -> {
             app.getAdb().rebootRecovery();
             Platform.runLater(() -> {
-                app.getLogger().log(AppContext.SOURCE_ADB, "已重启到 Recovery");
-                append.accept("$ adb reboot recovery\n已重启到 Recovery");
+                app.getLogger().log(AppContext.SOURCE_ADB, "已重启到Recovery");
+                append.accept("$ adb reboot recovery\n已重启到Recovery");
             });
         }));
 
@@ -216,7 +216,7 @@ public final class AdbTab {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("保存截图");
             chooser.setInitialFileName("screenshot_" + LocalDateTime.now().format(FILE_TIME_FMT) + ".png");
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG 图片", "*.png"));
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG图片", "*.png"));
             File file = chooser.showSaveDialog(app.getStage());
             if (file == null) {
                 return;
@@ -246,8 +246,8 @@ public final class AdbTab {
                 String cmdLine = app.getScrcpy().resolvePath()
                         + (serial != null && !serial.isBlank() ? " -s " + serial : "");
                 Platform.runLater(() -> {
-                    app.getLogger().log(AppContext.SOURCE_ADB, "已启动 scrcpy");
-                    append.accept("$ " + cmdLine + "\nscrcpy 已启动");
+                    app.getLogger().log(AppContext.SOURCE_ADB, "已启动scrcpy");
+                    append.accept("$ " + cmdLine + "\nscrcpy已启动");
                 });
             } catch (Exception ex) {
                 Platform.runLater(() -> {
@@ -265,28 +265,28 @@ public final class AdbTab {
             });
         }));
 
-        Button versionBtn = actionButton("ADB 版本", () -> runHost.accept(() -> {
+        Button versionBtn = actionButton("ADB版本", () -> runHost.accept(() -> {
             String version = app.getAdb().getVersion();
             Platform.runLater(() -> {
-                app.getLogger().log(AppContext.SOURCE_ADB, "ADB 版本查询完成");
+                app.getLogger().log(AppContext.SOURCE_ADB, "ADB版本查询完成");
                 append.accept("$ adb version\n" + version);
             });
         }));
 
-        Button restartAdbBtn = actionButton("重启 ADB 服务", () -> runHost.accept(() -> {
+        Button restartAdbBtn = actionButton("重启ADB服务", () -> runHost.accept(() -> {
             app.getAdb().killServer();
             app.getAdb().startServer();
             Platform.runLater(() -> {
-                app.getLogger().log(AppContext.SOURCE_ADB, "ADB 服务已重启");
-                append.accept("$ adb kill-server && adb start-server\nADB 服务已重启");
+                app.getLogger().log(AppContext.SOURCE_ADB, "ADB服务已重启");
+                append.accept("$ adb kill-server && adb start-server\nADB服务已重启");
             });
         }));
 
-        Button installBtn = new Button("安装 APK");
+        Button installBtn = new Button("安装APK");
         installBtn.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
-            chooser.setTitle("选择 APK 文件");
-            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("APK 文件", "*.apk"));
+            chooser.setTitle("选择APK文件");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("APK文件", "*.apk"));
             File file = chooser.showOpenDialog(app.getStage());
             if (file == null) {
                 return;
@@ -295,7 +295,7 @@ public final class AdbTab {
             runOnDevice.accept(() -> {
                 app.getAdb().install(file.getAbsolutePath(), replace);
                 Platform.runLater(() -> {
-                    app.getLogger().log(AppContext.SOURCE_ADB, "APK 安装成功: %s", file.getName());
+                    app.getLogger().log(AppContext.SOURCE_ADB, "APK安装成功: %s", file.getName());
                     append.accept("$ adb install" + (replace ? " -r" : "") + " " + file.getName() + "\n安装成功");
                 });
             });
@@ -340,7 +340,7 @@ public final class AdbTab {
                 runOnDevice.accept(() -> {
                     app.getAdb().forwardTcp(finalLocal, finalRemote);
                     Platform.runLater(() -> {
-                        app.getLogger().log(AppContext.SOURCE_ADB, "已添加转发 tcp:%d -> tcp:%d", finalLocal, finalRemote);
+                        app.getLogger().log(AppContext.SOURCE_ADB, "已添加转发tcp:%d -> tcp:%d", finalLocal, finalRemote);
                         append.accept("$ adb forward tcp:" + finalLocal + " tcp:" + finalRemote + "\n转发已添加");
                     });
                 });
@@ -361,7 +361,7 @@ public final class AdbTab {
                 runOnDevice.accept(() -> {
                     app.getAdb().forwardRemove(finalLocal);
                     Platform.runLater(() -> {
-                        app.getLogger().log(AppContext.SOURCE_ADB, "已移除转发 tcp:%d", finalLocal);
+                        app.getLogger().log(AppContext.SOURCE_ADB, "已移除转发tcp:%d", finalLocal);
                         append.accept("$ adb forward --remove tcp:" + finalLocal + "\n转发已移除");
                     });
                 });
@@ -370,17 +370,17 @@ public final class AdbTab {
             }
         });
 
-        Button shellBtn = new Button("执行 Shell");
+        Button shellBtn = new Button("执行Shell");
         shellBtn.setOnAction(e -> {
             String cmd = shellField.getText().trim();
             if (cmd.isEmpty()) {
-                app.getLogger().log(AppContext.SOURCE_ADB, "请输入 shell 命令");
+                app.getLogger().log(AppContext.SOURCE_ADB, "请输入shell命令");
                 return;
             }
             runOnDevice.accept(() -> {
                 String result = app.getAdb().shellInteractive(cmd);
                 Platform.runLater(() -> {
-                    app.getLogger().log(AppContext.SOURCE_ADB, "Shell 命令已执行");
+                    app.getLogger().log(AppContext.SOURCE_ADB, "Shell命令已执行");
                     append.accept("$ adb shell " + cmd + "\n" + (result.isBlank() ? "(无输出)" : result));
                 });
             });
@@ -390,7 +390,7 @@ public final class AdbTab {
         customBtn.setOnAction(e -> {
             String cmd = customField.getText().trim();
             if (cmd.isEmpty()) {
-                app.getLogger().log(AppContext.SOURCE_ADB, "请输入 adb 命令");
+                app.getLogger().log(AppContext.SOURCE_ADB, "请输入adb命令");
                 return;
             }
             String[] args = cmd.split("\\s+");

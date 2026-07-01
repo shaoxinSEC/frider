@@ -100,7 +100,7 @@ public class FridaClient {
     public synchronized void refreshAppLabels() throws IOException, InterruptedException {
         Map<String, String> labels = fetchAppLabelsViaFridaPs();
         if (labels.isEmpty()) {
-            throw new IOException("frida-ps 未返回任何应用名");
+            throw new IOException("frida-ps未返回任何应用名");
         }
         appLabels = Map.copyOf(labels);
     }
@@ -122,10 +122,14 @@ public class FridaClient {
     }
 
     private Map<String, String> fetchAppLabelsViaFridaPs() throws IOException, InterruptedException {
+        return runFridaPs(FridaConnection.fridaPsCommandArgs(config));
+    }
+
+    private Map<String, String> runFridaPs(List<String> fridaPsArgs) throws IOException, InterruptedException {
         ensureAvailable();
         List<String> command = new ArrayList<>();
         command.add(resolveFridaPsPath());
-        command.addAll(config.getFridaPsArgs());
+        command.addAll(fridaPsArgs);
 
         ProcessBuilder pb = new ProcessBuilder(command);
         ProcessUtil.prepareProcess(pb);
@@ -145,7 +149,7 @@ public class FridaClient {
 
         if (!process.waitFor(30, TimeUnit.SECONDS)) {
             process.destroyForcibly();
-            throw new IOException("frida-ps 执行超时");
+            throw new IOException("frida-ps执行超时");
         }
         if (process.exitValue() != 0) {
             throw new IOException(formatFridaPsFailure(process.exitValue(), output));
@@ -179,11 +183,11 @@ public class FridaClient {
             }
         }
         if (detail.contains("unable to communicate with remote frida-server")) {
-            detail = detail + "（请确认 frida client、frida-tools 目录中的 frida-ps 与设备上 frida-server 类型一致）";
+            detail = detail + "（请确认frida client、frida-tools目录中的frida-ps与设备上frida-server类型一致，且连接方式正确）";
         }
         return detail.isBlank()
-                ? "frida-ps 退出码 " + exitCode
-                : "frida-ps 退出码 " + exitCode + ": " + detail;
+                ? "frida-ps退出码 " + exitCode
+                : "frida-ps退出码 " + exitCode + ": " + detail;
     }
 
     public static List<FridaScript> listScripts(Path scriptsDir) throws IOException {
@@ -227,7 +231,7 @@ public class FridaClient {
         String toolPath = resolveSubToolPath(marker);
         List<String> args = new ArrayList<>();
         args.add(toolPath);
-        args.add("-U");
+        args.addAll(FridaConnection.deviceArgs(config));
         if (tool.needsTarget()) {
             if (pid != null && !pid.isBlank() && !"N/A".equals(pid)) {
                 args.add(pid.split("\\s+")[0]);
@@ -246,17 +250,18 @@ public class FridaClient {
 
     public Process runScript(RunOptions opt) throws IOException {
         ensureAvailable();
-        if (opt.getScriptPath() == null || opt.getScriptPath().isBlank()) {
+        List<String> scriptPaths = opt.getScriptPaths().stream()
+                .filter(path -> path != null && !path.isBlank())
+                .toList();
+        if (scriptPaths.isEmpty()) {
             throw new IOException("未选择脚本");
         }
         List<String> args = new ArrayList<>();
         args.add(resolveClientPath());
-        args.add("-U");
-        args.add("-l");
-        args.add(opt.getScriptPath());
+        args.addAll(FridaConnection.deviceArgs(config));
         if (opt.isSpawn()) {
             if (opt.getPackageName() == null || opt.getPackageName().isBlank()) {
-                throw new IOException("Spawn 模式请指定目标应用");
+                throw new IOException("Spawn模式请指定目标应用");
             }
             args.add("-f");
             args.add(opt.getPackageName());
@@ -266,7 +271,11 @@ public class FridaClient {
         } else if (opt.getPackageName() != null && !opt.getPackageName().isBlank()) {
             args.add(opt.getPackageName());
         } else {
-            throw new IOException("Attach 模式请指定目标应用或 PID");
+            throw new IOException("Attach模式请指定目标应用或PID");
+        }
+        for (String scriptPath : scriptPaths) {
+            args.add("-l");
+            args.add(scriptPath);
         }
 
         ProcessBuilder pb = new ProcessBuilder(args);

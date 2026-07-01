@@ -36,7 +36,21 @@
 }
 
 .form-label {
-    -fx-text-fill: #555;
+    -fx-text-fill: #333;
+}
+
+.frida-connection-panel .radio-button,
+.frida-connection-panel .radio-button .label {
+    -fx-text-fill: #000000;
+}
+
+.frida-connection-panel .text-field {
+    -fx-text-fill: #000000;
+    -fx-prompt-text-fill: #666666;
+}
+
+.frida-connection-panel .text-field:disabled {
+    -fx-opacity: 0.55;
 }
 
 .section-header {

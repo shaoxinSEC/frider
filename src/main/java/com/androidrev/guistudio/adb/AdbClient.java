@@ -437,7 +437,7 @@ public class AdbClient {
 
     public void connect(String hostPort) throws IOException, InterruptedException {
         if (hostPort == null || hostPort.isBlank()) {
-            throw new IOException("请输入 host:port");
+            throw new IOException("请输入host:port");
         }
         runForSerial(null, "connect", hostPort.trim());
     }
@@ -538,7 +538,7 @@ public class AdbClient {
 
     public String shellInteractive(String command) throws IOException, InterruptedException {
         if (command == null || command.isBlank()) {
-            throw new IOException("请输入 shell 命令");
+            throw new IOException("请输入shell命令");
         }
         return shellScript(command.trim());
     }
@@ -605,12 +605,12 @@ public class AdbClient {
 
     public void killProcess(String pid) throws IOException, InterruptedException {
         if (pid == null || pid.isBlank() || "N/A".equals(pid)) {
-            throw new IOException("无效的 PID");
+            throw new IOException("无效的PID");
         }
         try {
             Integer.parseInt(pid);
         } catch (NumberFormatException e) {
-            throw new IOException("无效的 PID: " + pid);
+            throw new IOException("无效的PID: " + pid);
         }
         shell("kill", "-9", pid);
     }
@@ -675,7 +675,7 @@ public class AdbClient {
     public void addRedirectRuleFromTemplate(String template, String proxyHostPort, String uid)
             throws IOException, InterruptedException {
         if (template.contains("{uid}") && (uid == null || uid.isBlank())) {
-            throw new IOException("规则模板需要应用 UID");
+            throw new IOException("规则模板需要应用UID");
         }
         ProxyEndpoint endpoint = ProxyEndpoint.parse(
                 proxyHostPort.contains("://") ? proxyHostPort : "http://" + proxyHostPort);
@@ -716,7 +716,7 @@ public class AdbClient {
             }
         } catch (IOException ignored) {
         }
-        throw new IOException("无法获取 " + packageName + " 的 UID");
+        throw new IOException("无法获取 " + packageName + " 的UID");
     }
 
     private static boolean isValidUid(String uid) {
@@ -763,10 +763,7 @@ public class AdbClient {
     public void startFridaServer(String overrideCommand) throws IOException, InterruptedException {
         String startCmd = overrideCommand;
         if (startCmd == null || startCmd.isBlank()) {
-            startCmd = config.getFridaServerStartCommand();
-            if (startCmd == null || startCmd.isBlank()) {
-                startCmd = fridaServerRemotePath() + " &";
-            }
+            startCmd = fridaServerRemotePath() + " &";
         }
         startCmd = startCmd.trim();
         if (startCmd.startsWith("adb shell ")) {
@@ -873,7 +870,7 @@ public class AdbClient {
                 return;
             }
         }
-        throw new IOException("frida-server 未运行");
+        throw new IOException("frida-server未运行");
     }
 
     private String fridaServerRemotePath() {

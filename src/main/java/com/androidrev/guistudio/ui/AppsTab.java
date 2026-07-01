@@ -150,7 +150,7 @@ public final class AppsTab {
             return;
         }
         if ("N/A".equals(target.getPid())) {
-            app.getLogger().log(AppContext.SOURCE_APPS, "应用 %s 未运行", target.getPackageName());
+            app.getLogger().log(AppContext.SOURCE_APPS, "应用 %s未运行", target.getPackageName());
             return;
         }
         Async.run(() -> {

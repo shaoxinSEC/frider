@@ -1,5 +1,6 @@
 package com.androidrev.guistudio.config;
 
+import com.androidrev.guistudio.frida.FridaConnection;
 import org.tomlj.Toml;
 import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
@@ -88,20 +89,14 @@ public class ConfigManager implements AutoCloseable {
         Config cfg = new Config();
         cfg.setRootCommand(stringOrDefault(result, "root_command", "su"));
         cfg.setFridaServerPath(stringOrDefault(result, "frida_server_path", "/data/local/tmp/frida-server"));
-        cfg.setFridaServerStartCommand(stringOrDefault(result, "frida_server_start_command", "/data/local/tmp/frida-server &"));
         cfg.setFridaClientPath(stringOrDefault(result, "frida_client_path", "frida"));
         cfg.setFridaToolsDir(stringOrDefault(result, "frida_tools_dir", "tools/frida-tools"));
-        TomlArray fridaPsArgs = result.getArray("frida_ps_args");
-        if (fridaPsArgs != null && fridaPsArgs.size() > 0) {
-            List<String> args = new ArrayList<>();
-            for (int i = 0; i < fridaPsArgs.size(); i++) {
-                String arg = fridaPsArgs.getString(i);
-                if (arg != null && !arg.isBlank()) {
-                    args.add(arg);
-                }
-            }
-            cfg.setFridaPsArgs(args);
-        }
+        cfg.setFridaConnection(stringOrDefault(result, "frida_connection", "usb"));
+        cfg.setFridaRemoteHost(stringOrDefault(result, "frida_remote_host", ""));
+        String port = stringOrDefault(result, "frida_remote_port", FridaConnection.defaultPort());
+        cfg.setFridaRemotePort(port);
+        // 兼容旧版frida_remote_host = "ip:port" 写法
+        migrateLegacyRemoteHost(cfg);
         cfg.setAdbPath(stringOrDefault(result, "adb_path", "adb"));
         cfg.setScrcpyPath(stringOrDefault(result, "scrcpy_path", "scrcpy"));
         cfg.setScriptsDir(stringOrDefault(result, "scripts_dir", "scripts"));
@@ -126,23 +121,16 @@ public class ConfigManager implements AutoCloseable {
 
     private void writeConfig(Config cfg) throws IOException {
         StringBuilder sb = new StringBuilder();
-        sb.append("# FRIDER 配置文件\n");
+        sb.append("# FRIDER配置文件\n");
         sb.append("# 可在程序「设置」页修改；保存后自动生效\n\n");
         sb.append("root_command = \"").append(escape(cfg.getRootCommand())).append("\"\n");
         sb.append("frida_server_path = \"").append(escape(cfg.getFridaServerPath())).append("\"\n");
-        sb.append("frida_server_start_command = \"").append(escape(cfg.getFridaServerStartCommand())).append("\"\n");
         sb.append("frida_client_path = \"").append(escape(cfg.getFridaClientPath())).append("\"\n");
         sb.append("frida_tools_dir = \"").append(escape(cfg.getFridaToolsDir())).append("\"\n");
-        sb.append("# frida-ps 等子工具从 frida_tools_dir 目录中按名称匹配\n");
-        sb.append("frida_ps_args = [");
-        List<String> psArgs = cfg.getFridaPsArgs();
-        for (int i = 0; i < psArgs.size(); i++) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append("\"").append(escape(psArgs.get(i))).append("\"");
-        }
-        sb.append("]\n");
+        sb.append("# frida-ps固定为 -a -i，连接方式见frida_connection\n");
+        sb.append("frida_connection = \"").append(escape(cfg.getFridaConnection())).append("\"\n");
+        sb.append("frida_remote_host = \"").append(escape(cfg.getFridaRemoteHost())).append("\"\n");
+        sb.append("frida_remote_port = \"").append(escape(cfg.getFridaRemotePort())).append("\"\n");
         sb.append("adb_path = \"").append(escape(cfg.getAdbPath())).append("\"\n");
         sb.append("scrcpy_path = \"").append(escape(cfg.getScrcpyPath())).append("\"\n");
         sb.append("scripts_dir = \"").append(escape(cfg.getScriptsDir())).append("\"\n");
@@ -157,6 +145,23 @@ public class ConfigManager implements AutoCloseable {
     private static String stringOrDefault(TomlTable table, String key, String defaultValue) {
         String value = table.getString(key);
         return value != null ? value : defaultValue;
+    }
+
+    private static void migrateLegacyRemoteHost(Config cfg) {
+        String host = cfg.getFridaRemoteHost();
+        if (host == null || !host.contains(":")) {
+            return;
+        }
+        int idx = host.lastIndexOf(':');
+        String maybePort = host.substring(idx + 1);
+        try {
+            int port = Integer.parseInt(maybePort.trim());
+            if (port > 0 && port <= 65535) {
+                cfg.setFridaRemoteHost(host.substring(0, idx).trim());
+                cfg.setFridaRemotePort(String.valueOf(port));
+            }
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     private void startWatcher() throws IOException {

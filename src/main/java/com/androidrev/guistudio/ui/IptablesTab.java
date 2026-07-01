@@ -43,7 +43,7 @@ public final class IptablesTab {
         protocolSelect.setValue("http");
 
         TextField proxyEntry = new TextField();
-        proxyEntry.setPromptText("代理 IP:端口");
+        proxyEntry.setPromptText("代理IP:端口");
         UiLayout.fillWidth(proxyEntry);
         applyDefaultProxy(app.getConfig(), protocolSelect, proxyEntry);
         app.addConfigListener(cfg -> Platform.runLater(() -> applyDefaultProxy(cfg, protocolSelect, proxyEntry)));
@@ -54,13 +54,13 @@ public final class IptablesTab {
             try {
                 var check = app.getAdb().hasDevice();
                 if (!check.connected()) {
-                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_IPTABLES, "未检测到 ADB 设备"));
+                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_IPTABLES, "未检测到ADB设备"));
                     return;
                 }
                 String out = app.getAdb().listNatRules();
                 Platform.runLater(() -> {
                     rulesView.setText(out);
-                    app.getLogger().log(AppContext.SOURCE_IPTABLES, "已刷新 iptables 规则");
+                    app.getLogger().log(AppContext.SOURCE_IPTABLES, "已刷新iptables规则");
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_IPTABLES, e));
@@ -135,7 +135,7 @@ public final class IptablesTab {
             try {
                 app.getAdb().clearNatOutputRules();
                 Platform.runLater(() -> {
-                    app.getLogger().log(AppContext.SOURCE_IPTABLES, "已清除 nat OUTPUT 转发规则");
+                    app.getLogger().log(AppContext.SOURCE_IPTABLES, "已清除nat OUTPUT转发规则");
                     refreshRules.run();
                 });
             } catch (Exception ex) {
@@ -163,7 +163,7 @@ public final class IptablesTab {
         String proto = protocol == null || protocol.isBlank() ? "http" : protocol.trim().toLowerCase();
         String addr = address == null ? "" : address.trim();
         if (addr.isEmpty()) {
-            throw new IllegalArgumentException("请输入代理 IP:端口");
+            throw new IllegalArgumentException("请输入代理IP:端口");
         }
         if (addr.contains("://")) {
             return ProxyEndpoint.parse(addr);

@@ -1,32 +1,15 @@
-# 修改后保存即可热更新，无需重启程序
+# FRIDER配置文件
+# 可在程序「设置」页修改；保存后自动生效
 
 root_command = "fk"
-frida_server_path = "/data/local/tmp/flo-16.7.19"
-frida_server_start_command = "/data/local/tmp/flo-16.7.19 &"
-frida_client_path = "tools/frida/frida-16.7.19/frida-16.7.19-c.exe"
-frida_ps_args = ["-U", "-a", "-i"]   # 用来获取应用名称，即当前frida client同级目录中名称包含frida-ps的文件
-adb_path = "tools/adb/adb.exe"
+frida_server_path = "/data/local/tmp/aj"
+frida_client_path = "C:\\Users\\shaoxinSEC\\Desktop\\frider\\frida-16.5.7\\Scripts\\frida.exe"
+frida_tools_dir = "C:\\Users\\shaoxinSEC\\Desktop\\frider\\frida-16.5.7\\Scripts"
+# frida-ps固定为 -a -i，连接方式见frida_connection
+frida_connection = "usb"
+frida_remote_host = "127.0.0.1"
+frida_remote_port = "99999"
+adb_path = "adb"
+scrcpy_path = "scrcpy"
 scripts_dir = "scripts"
-default_proxy = "http://192.168.137.1:8083"
-
-
-
-# 转发规则（转发所有流量时生效，转发特定应用的流量不生效）
-# {proxy} = IP:端口
-# {proxy_host} = IP
-# {proxy_port} = 端口
-
-[[iptables_redirect_rules]]
-name = "SkipLocalhost"
-template = "iptables -t nat -A OUTPUT -p tcp -d 127.0.0.0/8 -j RETURN"
-
-
-[[iptables_redirect_rules]]
-name = "SkipProxy"
-template = "iptables -t nat -A OUTPUT -p tcp -d {proxy_host} -j RETURN"
-
-
-[[iptables_redirect_rules]]
-name = "AllTCP"
-template = "iptables -t nat -A OUTPUT -p tcp -j DNAT --to-destination {proxy}"
-
+default_proxy = ""

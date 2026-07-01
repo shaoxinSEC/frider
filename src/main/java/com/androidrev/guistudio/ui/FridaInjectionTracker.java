@@ -7,7 +7,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 final class FridaInjectionTracker {
-    record Session(String id, String scriptName, Process process) {
+    record Session(String id, List<String> scriptNames, Process process) {
+        String label() {
+            if (scriptNames.size() == 1) {
+                return scriptNames.get(0);
+            }
+            return String.join(" + ", scriptNames);
+        }
+
+        boolean includes(String scriptName) {
+            return scriptNames.contains(scriptName);
+        }
     }
 
     private final CopyOnWriteArrayList<Session> sessions = new CopyOnWriteArrayList<>();
@@ -17,8 +27,8 @@ final class FridaInjectionTracker {
         this.onChange = onChange != null ? onChange : () -> {};
     }
 
-    Session register(String scriptName, Process process) {
-        Session session = new Session(UUID.randomUUID().toString(), scriptName, process);
+    Session register(List<String> scriptNames, Process process) {
+        Session session = new Session(UUID.randomUUID().toString(), List.copyOf(scriptNames), process);
         sessions.add(session);
         notifyChange();
         return session;
@@ -31,19 +41,21 @@ final class FridaInjectionTracker {
     }
 
     boolean isRunning(String scriptName) {
-        return sessions.stream().anyMatch(s -> s.scriptName().equals(scriptName));
+        return sessions.stream().anyMatch(s -> s.includes(scriptName));
     }
 
     int countForScript(String scriptName) {
-        return (int) sessions.stream().filter(s -> s.scriptName().equals(scriptName)).count();
+        return (int) sessions.stream().filter(s -> s.includes(scriptName)).count();
     }
 
     int totalCount() {
-        return sessions.size();
+        return sessions.stream().mapToInt(s -> s.scriptNames().size()).sum();
     }
 
     Set<String> runningScriptNames() {
-        return sessions.stream().map(Session::scriptName).collect(Collectors.toSet());
+        return sessions.stream()
+                .flatMap(s -> s.scriptNames().stream())
+                .collect(Collectors.toSet());
     }
 
     void stopAll() {
@@ -54,14 +66,19 @@ final class FridaInjectionTracker {
         notifyChange();
     }
 
-    void stopScript(String scriptName) {
+    List<Session> sessions() {
+        return List.copyOf(sessions);
+    }
+
+    void stopSessionById(String sessionId) {
         for (Session session : List.copyOf(sessions)) {
-            if (session.scriptName().equals(scriptName)) {
+            if (session.id().equals(sessionId)) {
                 stopSession(session);
                 sessions.remove(session);
+                notifyChange();
+                return;
             }
         }
-        notifyChange();
     }
 
     private static void stopSession(Session session) {

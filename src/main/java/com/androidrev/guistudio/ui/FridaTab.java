@@ -1,7 +1,6 @@
 package com.androidrev.guistudio.ui;
 
 import com.androidrev.guistudio.adb.AppInfo;
-import com.androidrev.guistudio.adb.TmpExecutable;
 import com.androidrev.guistudio.frida.FridaScript;
 import com.androidrev.guistudio.frida.FridaTools;
 import com.androidrev.guistudio.frida.RunOptions;
@@ -9,7 +8,6 @@ import com.androidrev.guistudio.exec.ProcessUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
@@ -18,9 +16,9 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SplitPane;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 
@@ -29,11 +27,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public final class FridaTab {
     private FridaTab() {
@@ -43,6 +39,7 @@ public final class FridaTab {
         ObservableList<FridaScript> scripts = FXCollections.observableArrayList();
         FridaInjectionTracker injections = new FridaInjectionTracker();
         ListView<FridaScript> list = new ListView<>(scripts);
+        list.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         list.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(FridaScript item, boolean empty) {
@@ -72,99 +69,66 @@ public final class FridaTab {
         modeSelect.setValue("Attach");
         modeSelect.setMaxWidth(Double.MAX_VALUE);
 
-        ComboBox<TmpExecutable> serverSelect = new ComboBox<>();
-        serverSelect.setPromptText("设备 Server");
-        serverSelect.setCellFactory(tmpExecutableCellFactory());
-        serverSelect.setButtonCell(tmpExecutableCellFactory().call(null));
-        UiLayout.fillWidth(serverSelect);
+        FridaConnectionPanel connectionPanel = new FridaConnectionPanel(app, true);
 
-        Button stopBtn = new Button("停止全部");
-        Button pushBtn = new Button("Push");
-        Button startSrvBtn = new Button("Start");
-        Button stopSrvBtn = new Button("Stop");
-        startSrvBtn.setDisable(true);
-        stopSrvBtn.setDisable(true);
+        Button runSelectedBtn = new Button("执行选中");
+        Button stopBtn = new Button("停止注入");
+        UiLayout.fillWidth(modeSelect);
 
         Label runningLabel = new Label("运行中: 0");
         runningLabel.setStyle("-fx-text-fill: #666;");
-        injections.setOnChange(() -> Platform.runLater(() -> {
-            list.refresh();
-            runningLabel.setText("运行中: " + injections.totalCount());
-        }));
 
-        Runnable updateServerButtons = () -> {
-            TmpExecutable selected = serverSelect.getValue();
-            boolean hasSelection = selected != null;
-            boolean running = hasSelection && selected.isRunning();
-            startSrvBtn.setDisable(!hasSelection || running);
-            stopSrvBtn.setDisable(!hasSelection || !running);
-        };
-
-        serverSelect.setOnAction(e -> {
-            updateServerButtons.run();
-        });
-
-        ScheduledExecutorService serverPoll = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "frida-server-poll");
-            t.setDaemon(true);
-            return t;
-        });
-        Runnable refreshTmpExecutables = () -> Async.run(() -> {
-            try {
-                if (!app.getAdb().isAvailable()) {
-                    return;
+        ListView<FridaInjectionTracker.Session> runningList = new ListView<>();
+        runningList.setPrefHeight(120);
+        runningList.setPlaceholder(new Label("暂无运行中的脚本"));
+        runningList.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(FridaInjectionTracker.Session item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.label() + "  #" + item.id().substring(0, 8));
                 }
-                var check = app.getAdb().hasDevice();
-                if (!check.connected()) {
-                    Platform.runLater(() -> {
-                        serverSelect.getItems().clear();
-                        serverSelect.setValue(null);
-                        updateServerButtons.run();
-                    });
-                    return;
-                }
-                List<TmpExecutable> executables = new java.util.ArrayList<>(app.getAdb().listTmpExecutables());
-                String selectedPath = serverSelect.getValue() != null ? serverSelect.getValue().path() : null;
-                if (selectedPath == null) {
-                    String configPath = app.getConfig().getFridaServerPath();
-                    if (configPath != null && !configPath.isBlank()) {
-                        selectedPath = configPath.trim();
-                    }
-                }
-                final String preservePath = selectedPath;
-                Platform.runLater(() -> {
-                    serverSelect.getItems().setAll(executables);
-                    if (preservePath != null) {
-                        executables.stream()
-                                .filter(e -> preservePath.equals(e.path()))
-                                .findFirst()
-                                .ifPresent(e -> serverSelect.setValue(e));
-                    }
-                    updateServerButtons.run();
-                });
-            } catch (Exception e) {
-                Platform.runLater(() ->
-                        app.getLogger().log(AppContext.SOURCE_FRIDA,
-                                "列举 /data/local/tmp 可执行文件失败: %s", e.getMessage()));
             }
         });
-        serverPoll.scheduleWithFixedDelay(refreshTmpExecutables, 0, 3, TimeUnit.SECONDS);
-        app.getStage().addEventHandler(javafx.stage.WindowEvent.WINDOW_CLOSE_REQUEST, e -> serverPoll.shutdownNow());
+        MenuItem stopSessionItem = new MenuItem("停止此会话");
+        stopSessionItem.setOnAction(e -> {
+            FridaInjectionTracker.Session session = runningList.getSelectionModel().getSelectedItem();
+            if (session == null) {
+                return;
+            }
+            injections.stopSessionById(session.id());
+            app.getLogger().log(AppContext.SOURCE_FRIDA, "已停止: %s", session.label());
+        });
+        runningList.setContextMenu(new ContextMenu(stopSessionItem));
+        runningList.setOnContextMenuRequested(e ->
+                stopSessionItem.setDisable(runningList.getSelectionModel().getSelectedItem() == null));
+
+        injections.setOnChange(() -> Platform.runLater(() -> {
+            list.refresh();
+            runningList.getItems().setAll(injections.sessions());
+            runningLabel.setText("运行中: " + injections.totalCount());
+        }));
 
         Runnable refreshScripts = () -> Async.run(() -> {
             try {
                 Path dir = app.scriptsDirAbs();
                 var found = com.androidrev.guistudio.frida.FridaClient.listScripts(dir);
                 Platform.runLater(() -> {
-                    FridaScript selected = list.getSelectionModel().getSelectedItem();
+                    List<String> selectedNames = list.getSelectionModel().getSelectedItems().stream()
+                            .map(FridaScript::getName)
+                            .toList();
                     scripts.setAll(found);
-                    if (selected != null) {
-                        found.stream()
-                                .filter(s -> s.getName().equals(selected.getName()))
-                                .findFirst()
-                                .ifPresent(s -> list.getSelectionModel().select(s));
+                    if (!selectedNames.isEmpty()) {
+                        list.getSelectionModel().clearSelection();
+                        for (FridaScript script : found) {
+                            if (selectedNames.contains(script.getName())) {
+                                list.getSelectionModel().select(script);
+                            }
+                        }
                     }
-                    app.getLogger().log(AppContext.SOURCE_FRIDA, "已刷新 %d 个脚本", found.size());
+                    app.getLogger().log(AppContext.SOURCE_FRIDA, "已刷新 %d个脚本", found.size());
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_FRIDA, e));
@@ -183,100 +147,43 @@ public final class FridaTab {
         MenuItem deleteItem = new MenuItem("删除脚本");
         deleteItem.setOnAction(e -> deleteScript(app, list.getSelectionModel().getSelectedItem(), refreshScripts));
 
-        MenuItem runItem = new MenuItem("执行脚本");
-        runItem.setOnAction(e -> runScript(app, list.getSelectionModel().getSelectedItem(),
-                appSelect.getValue(), isSpawnMode(modeSelect), injections));
+        MenuItem runItem = new MenuItem("执行选中");
+        runItem.setOnAction(e -> runSelectedScripts(app, list, appSelect, modeSelect, injections));
 
-        MenuItem stopScriptItem = new MenuItem("停止此脚本");
-        stopScriptItem.setOnAction(e -> {
-            FridaScript selected = list.getSelectionModel().getSelectedItem();
-            if (selected == null) {
-                return;
-            }
-            if (!injections.isRunning(selected.getName())) {
-                app.getLogger().log(AppContext.SOURCE_FRIDA, "%s 未在运行", selected.getName());
-                return;
-            }
-            injections.stopScript(selected.getName());
-            app.getLogger().log(AppContext.SOURCE_FRIDA, "已停止: %s", selected.getName());
-        });
-
-        list.setContextMenu(new ContextMenu(refreshItem, editItem, newItem, deleteItem, runItem, stopScriptItem));
+        list.setContextMenu(new ContextMenu(refreshItem, editItem, newItem, deleteItem, runItem));
         list.setOnContextMenuRequested(e -> {
-            FridaScript selected = list.getSelectionModel().getSelectedItem();
-            boolean hasScript = selected != null;
-            editItem.setDisable(!hasScript);
-            deleteItem.setDisable(!hasScript);
+            List<FridaScript> selected = new ArrayList<>(list.getSelectionModel().getSelectedItems());
+            boolean hasScript = !selected.isEmpty();
+            boolean singleScript = selected.size() == 1;
+            editItem.setDisable(!singleScript);
+            deleteItem.setDisable(!singleScript);
             runItem.setDisable(!hasScript);
-            stopScriptItem.setDisable(!hasScript || !injections.isRunning(selected.getName()));
         });
         list.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2 && list.getSelectionModel().getSelectedItem() != null) {
-                runScript(app, list.getSelectionModel().getSelectedItem(),
-                        appSelect.getValue(), isSpawnMode(modeSelect), injections);
+                runSelectedScripts(app, list, appSelect, modeSelect, injections);
             }
         });
+
+        runSelectedBtn.setOnAction(e -> runSelectedScripts(app, list, appSelect, modeSelect, injections));
 
         stopBtn.setOnAction(e -> {
             int count = injections.totalCount();
             if (count == 0) {
-                app.getLogger().log(AppContext.SOURCE_FRIDA, "当前没有运行中的注入进程");
+                app.getLogger().log(AppContext.SOURCE_FRIDA, "当前没有运行中的注入");
                 return;
             }
             injections.stopAll();
-            app.getLogger().log(AppContext.SOURCE_FRIDA, "已停止全部注入 (%d)", count);
-        });
-
-        pushBtn.setOnAction(e -> pushFridaServer(app, serverSelect.getValue()));
-        startSrvBtn.setOnAction(e -> {
-            TmpExecutable selected = serverSelect.getValue();
-            if (selected == null) {
-                app.getLogger().log(AppContext.SOURCE_FRIDA, "请先选择设备上的 Frida Server");
-                return;
-            }
-            Async.run(() -> {
-                try {
-                    String cmd = app.getConfig().getFridaServerStartCommand();
-                    if (cmd == null || cmd.isBlank()) {
-                        cmd = selected.path() + " &";
-                    }
-                    final String startCmd = cmd.trim();
-                    app.getAdb().startFridaServer(startCmd);
-                    Platform.runLater(() -> {
-                        app.getLogger().log(AppContext.SOURCE_FRIDA, "Server 启动命令已发送: %s", startCmd);
-                        refreshTmpExecutables.run();
-                    });
-                } catch (Exception ex) {
-                    Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_FRIDA, ex));
-                }
-            });
-        });
-        stopSrvBtn.setOnAction(e -> {
-            TmpExecutable selected = serverSelect.getValue();
-            if (selected == null) {
-                app.getLogger().log(AppContext.SOURCE_FRIDA, "请先选择 Frida Server");
-                return;
-            }
-            final String serverName = selected.name();
-            Async.run(() -> {
-                try {
-                    app.getAdb().stopTmpExecutable(selected);
-                    Platform.runLater(() -> {
-                        app.getLogger().log(AppContext.SOURCE_FRIDA, "Server 已停止: %s", serverName);
-                        refreshTmpExecutables.run();
-                    });
-                } catch (Exception ex) {
-                    Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_FRIDA, ex));
-                }
-            });
+            app.getLogger().log(AppContext.SOURCE_FRIDA, "已停止注入");
         });
 
         VBox right = UiLayout.panel(
+                connectionPanel.asFormRow(),
                 appSelect,
                 modeSelect,
-                UiLayout.toolbar(runningLabel, stopBtn),
-                serverSelect,
-                UiLayout.toolbar(pushBtn, startSrvBtn, stopSrvBtn),
+                UiLayout.toolbar(runningLabel, runSelectedBtn, stopBtn),
+                new Label("运行会话"),
+                runningList,
                 buildToolPanel(app, appSelect)
         );
         right.setMinWidth(240);
@@ -314,7 +221,7 @@ public final class FridaTab {
             btn.setOnAction(e -> runFridaTool(app, appSelect, tool));
             flow.getChildren().add(btn);
         }
-        Button clearDebugBtn = new Button("解除 debug");
+        Button clearDebugBtn = new Button("解除waiting for debug");
         clearDebugBtn.setOnAction(e -> clearWaitingForDebug(app));
         flow.getChildren().add(clearDebugBtn);
         return flow;
@@ -325,7 +232,7 @@ public final class FridaTab {
             try {
                 var check = app.getAdb().hasDevice();
                 if (!check.connected()) {
-                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到 ADB 设备"));
+                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到ADB设备"));
                     return;
                 }
                 app.getAdb().clearDebugApp();
@@ -345,7 +252,7 @@ public final class FridaTab {
             try {
                 var check = app.getAdb().hasDevice();
                 if (!check.connected()) {
-                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到 ADB 设备"));
+                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到ADB设备"));
                     return;
                 }
                 Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA,
@@ -372,50 +279,10 @@ public final class FridaTab {
                 stdoutThread.join();
                 stderrThread.join();
                 Platform.runLater(() ->
-                        app.getLogger().log(AppContext.SOURCE_FRIDA, "%s 已结束 (exit %d)", toolName, code));
+                        app.getLogger().log(AppContext.SOURCE_FRIDA, "%s已结束 (exit %d)", toolName, code));
             } catch (Exception ignored) {
             }
         });
-    }
-
-    private static void pushFridaServer(AppContext app, TmpExecutable target) {
-        String localPath;
-        try {
-            localPath = FridaTools.resolveLocalServerBesideClient(
-                    app.getConfig().getFridaClientPath(),
-                    app.getConfig().getFridaServerPath());
-        } catch (IOException e) {
-            app.getLogger().log(AppContext.SOURCE_FRIDA, "%s", e.getMessage());
-            return;
-        }
-        final String pushSource = localPath;
-        String remotePath = app.getConfig().getFridaServerPath();
-        if (target != null) {
-            remotePath = target.path();
-        } else if (remotePath == null || remotePath.isBlank()) {
-            remotePath = "/data/local/tmp/" + Path.of(pushSource).getFileName();
-        }
-        final String remote = remotePath.trim();
-        Async.run(() -> {
-            try {
-                app.getAdb().pushFridaServerTo(pushSource, remote);
-                app.getAdb().chmodFridaServer(remote);
-                Platform.runLater(() ->
-                        app.getLogger().log(AppContext.SOURCE_FRIDA, "Server 已 push: %s -> %s", pushSource, remote));
-            } catch (Exception e) {
-                Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_FRIDA, e));
-            }
-        });
-    }
-
-    private static Callback<ListView<TmpExecutable>, ListCell<TmpExecutable>> tmpExecutableCellFactory() {
-        return lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(TmpExecutable item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.displayName());
-            }
-        };
     }
 
     private static void syncAppSelect(ComboBox<AppInfo> appSelect, List<AppInfo> apps) {
@@ -511,9 +378,20 @@ public final class FridaTab {
         }
     }
 
-    private static void runScript(AppContext app, FridaScript script, AppInfo targetApp,
-                                  boolean spawnMode, FridaInjectionTracker injections) {
-        if (script == null) {
+    private static void runSelectedScripts(AppContext app, ListView<FridaScript> list,
+                                           ComboBox<AppInfo> appSelect, ComboBox<String> modeSelect,
+                                           FridaInjectionTracker injections) {
+        List<FridaScript> selected = new ArrayList<>(list.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) {
+            app.getLogger().log(AppContext.SOURCE_FRIDA, "请先选择脚本");
+            return;
+        }
+        runScripts(app, selected, appSelect.getValue(), isSpawnMode(modeSelect), injections);
+    }
+
+    private static void runScripts(AppContext app, List<FridaScript> scripts, AppInfo targetApp,
+                                     boolean spawnMode, FridaInjectionTracker injections) {
+        if (scripts == null || scripts.isEmpty()) {
             app.getLogger().log(AppContext.SOURCE_FRIDA, "请先选择脚本");
             return;
         }
@@ -525,28 +403,40 @@ public final class FridaTab {
 
         final String packageName = pkg;
         final String pidVal = pid;
-        final String scriptName = script.getName();
+        final List<String> scriptPaths = scripts.stream().map(FridaScript::getPath).toList();
+        final List<String> scriptNames = scripts.stream().map(FridaScript::getName).toList();
+        final String logLabel = scriptNames.size() == 1
+                ? scriptNames.get(0)
+                : String.join(" + ", scriptNames);
 
         Async.run(() -> {
             try {
                 var check = app.getAdb().hasDevice();
                 if (!check.connected()) {
-                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到 ADB 设备"));
+                    Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA, "未检测到ADB设备"));
                     return;
                 }
 
                 RunOptions opt = new RunOptions();
-                opt.setScriptPath(script.getPath());
+                opt.setScriptPaths(scriptPaths);
                 opt.setPackageName(packageName);
                 opt.setPid(pidVal);
                 opt.setSpawn(spawnMode);
 
-                Platform.runLater(() -> app.getLogger().log(AppContext.SOURCE_FRIDA,
-                        "执行: %s (%s) [运行中: %d]", scriptName, spawnMode ? "Spawn" : "Attach",
-                        injections.totalCount()));
+                Platform.runLater(() -> {
+                    if (scriptNames.size() > 1) {
+                        app.getLogger().log(AppContext.SOURCE_FRIDA,
+                                "执行 %d个脚本 (%s) [运行中: %d]",
+                                scriptNames.size(), spawnMode ? "Spawn" : "Attach", injections.totalCount());
+                    } else {
+                        app.getLogger().log(AppContext.SOURCE_FRIDA,
+                                "执行: %s (%s) [运行中: %d]",
+                                logLabel, spawnMode ? "Spawn" : "Attach", injections.totalCount());
+                    }
+                });
 
                 Process process = app.getFrida().runScript(opt);
-                FridaInjectionTracker.Session session = injections.register(scriptName, process);
+                FridaInjectionTracker.Session session = injections.register(scriptNames, process);
                 watchProcess(app, session, injections);
             } catch (Exception e) {
                 Platform.runLater(() -> Logger.showError(app, AppContext.SOURCE_FRIDA, e));
@@ -557,8 +447,8 @@ public final class FridaTab {
     private static void watchProcess(AppContext app, FridaInjectionTracker.Session session,
                                      FridaInjectionTracker injections) {
         Process process = session.process();
-        String scriptName = session.scriptName();
-        String logPrefix = scriptName + "|";
+        String logLabel = session.label();
+        String logPrefix = logLabel + "|";
 
         Thread stdoutThread = new Thread(
                 () -> streamToLog(process.getInputStream(), app, logPrefix + "OUT"), "frida-stdout-" + session.id());
@@ -574,7 +464,7 @@ public final class FridaTab {
                 stderrThread.join();
                 injections.unregister(session);
                 Platform.runLater(() ->
-                        app.getLogger().log(AppContext.SOURCE_FRIDA, "%s 已结束 (exit %d)", scriptName, code));
+                        app.getLogger().log(AppContext.SOURCE_FRIDA, "%s已结束 (exit %d)", logLabel, code));
             } catch (Exception ignored) {
                 injections.unregister(session);
             }
